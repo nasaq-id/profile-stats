@@ -1,0 +1,34 @@
+name: Update profile stats card
+
+# Jalan di org nasaq-id (Actions akun pribadi kena kunci billing).
+# Skrip & kartunya ada di nohypelabs/nohypelabs; repo ini cuma pemicu.
+# Push pakai deploy key (secret PROFILE_DEPLOY_KEY) yang hanya bisa
+# menulis ke nohypelabs/nohypelabs.
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # tiap hari 07:00 WIB
+  workflow_dispatch:
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: nohypelabs/nohypelabs
+          ssh-key: ${{ secrets.PROFILE_DEPLOY_KEY }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node .github/scripts/stats-card.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_USER: nohypelabs
+      - name: Commit kalau berubah
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/stats.svg
+          git diff --cached --quiet || git commit -m "chore: update stats card [skip ci]"
+          git push
